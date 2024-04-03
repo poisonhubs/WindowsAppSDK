@@ -5,9 +5,14 @@ parameters:
 - name: "IsOneBranch"
   type: boolean
   default: True
-- name: "RunPrefast"
+# alam start
+#- name: "RunPrefast"
+#  type: boolean
+#  default: False
+- name: runStaticAnalysis
   type: boolean
-  default: False
+  default: True
+# alam end
 
 steps:
 - template: WindowsAppSDK-SetupBuildEnvironment-Steps.yml
@@ -22,7 +27,10 @@ steps:
     compilerPackageVersion: $(compilerOverridePackageVersion)
     slnDirectory: $(Build.SourcesDirectory)\dev\MRTCore\mrt
 
-- ${{ if parameters.RunPrefast }}:
+# alam start
+#- ${{ if parameters.RunPrefast }}:
+- ${{ if eq(parameters.runStaticAnalysis, 'True') }}:
+# alam end
   # PREFast scan is enabled in this pipeline run, so we pass PreFastSetup to BuildAll.ps1 to get it to do the commonn setup steps, but short of
   # building the target via MSBuild.exe
   - task: PowerShell@2
@@ -39,12 +47,16 @@ steps:
       solution: '$(Build.SourcesDirectory)\dev\MRTCore\mrt\MrtCore.sln'
       configuration: '$(buildConfiguration)'
       msbuildArguments: '/restore /binaryLogger:$(Build.SourcesDirectory)\dev\MRTCore\mrt\mrtcore.$(buildPlatform).$(buildConfiguration).binlog'
+      createLogFile: true
 
   # ToDo: WindowsAppSDK-BinaryAnalysis-steps.yml below ultimately invokes SDLNativeRules@2, which is out of support.
   # So for the time being, we explicitly call SDLNativeRules@3, which is currently supported. Consider eliminating this
   # extra step when we run PREFast as part of WindowsAppSDK-BinaryAnalysis-steps.yml below.
   - task: SDLNativeRules@3
     displayName: 'Guardian: PreFast@3'
+    # alam start
+    condition: and(succeeded(), eq(variables['buildPlatform'], 'x64'), eq(variables['buildConfiguration'], 'Release'))
+    # alam end
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
     continueOnError: true
@@ -52,7 +64,10 @@ steps:
       userProvideBuildInfo: 'auto'
       toolVersion: Latest
 
-- ${{ if not( parameters.RunPrefast ) }}:
+# alam start
+#- ${{ if parameters.RunPrefast }}:
+- ${{ else }}:
+# alam end
   - task: PowerShell@2
     name: BuildBinaries
     retryCountOnTaskFailure: 10

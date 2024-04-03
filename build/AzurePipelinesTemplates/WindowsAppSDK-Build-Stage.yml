@@ -5,6 +5,11 @@ parameters:
 - name: "IsOneBranch"
   type: boolean
   default: True
+# alam start
+- name: runStaticAnalysis
+  type: boolean
+  default: True
+# alam end
 
 stages:
 - stage: Build
@@ -52,11 +57,20 @@ stages:
       ob_outputDirectory: '$(REPOROOT)\out'
       ob_sdl_codeSignValidation_excludes: '-|**\Release\**;-|**\packages\**'
       ob_artifactBaseName: "FoundationBinaries_$(buildConfiguration)_$(buildPlatform)"
+      # alam start
+      ob_sdl_apiscan_enabled: true
+      # Focus on scanning x64fre, as a start.
+      ob_sdl_apiscan_softwareFolder: '$(build.SourcesDirectory)\BuildOutput\Release\x64'
+      ob_sdl_apiscan_symbolsFolder: '$(build.SourcesDirectory)\BuildOutput\Release\x64;SRV*http://symweb'
+      # alam end
     steps:
     - template: WindowsAppSDK-BuildBinaries-Steps.yml@self
       parameters:
         SignOutput: ${{ parameters.SignOutput }}
         IsOneBranch: ${{ parameters.IsOneBranch }}
+        # alam start
+        runStaticAnalysis : ${{ parameters.runStaticAnalysis }}
+        # alam end
 
   - job: BuildBinaries_release_anycpu
     # For now, this job just builds Microsoft.WindowsAppRuntime.Bootstrap.Net.dll in AnyCPU
@@ -72,11 +86,19 @@ stages:
       ob_outputDirectory: '$(REPOROOT)\out'
       ob_sdl_codeSignValidation_excludes: '-|**\Release\**'
       ob_artifactBaseName: "FoundationBinaries_release_anycpu"
+      # alam start
+      ob_sdl_apiscan_enabled: true
+      ob_sdl_apiscan_softwareFolder: '$(build.SourcesDirectory)\BuildOutput\Release\AnyCPU'
+      ob_sdl_apiscan_symbolsFolder: '$(build.SourcesDirectory)\BuildOutput\Release\AnyCPU;SRV*http://symweb'
+      # alam end
     steps:
     - template: WindowsAppSDK-BuildBinaries-AnyCPU-Steps.yml@self
       parameters:
         SignOutput: ${{ parameters.SignOutput }}
         IsOneBranch: ${{ parameters.IsOneBranch }}
+        # alam start
+        runStaticAnalysis : ${{ parameters.runStaticAnalysis }}
+        # alam end
 
   - job: BuildMRT
     pool:
@@ -111,8 +133,17 @@ stages:
       ob_sdl_suppression_suppressionFile: $(Build.SourcesDirectory)\dev\MRTCore\.gdn\mrt.gdnsuppress # This value is set on the job cdpx_engine, it will override the global gdnsuppress for this job
       ob_sdl_suppression_suppressionSet: default
       ob_artifactBaseName: "MrtBinaries_$(buildConfiguration)_$(buildPlatform)"
+      # alam start
+      ob_sdl_apiscan_enabled: true
+      # Focus on scanning x64fre, as a start.
+      ob_sdl_apiscan_softwareFolder: '$(build.SourcesDirectory)\BuildOutput\Release\x64'
+      ob_sdl_apiscan_symbolsFolder: '$(build.SourcesDirectory)\BuildOutput\Release\x64;SRV*http://symweb'
+      # alam end
     steps:
     - template: WindowsAppSDK-BuildMRT-Steps.yml@self
       parameters:
         SignOutput: ${{ parameters.SignOutput }}
         IsOneBranch: ${{ parameters.IsOneBranch }}
+        # alam start
+        runStaticAnalysis : ${{ parameters.runStaticAnalysis }}
+        # alam end
