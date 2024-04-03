@@ -88,10 +88,9 @@ steps:
     displayName: 'build MrtCore with MSBuild'
     inputs:
       platform: '$(buildPlatform)'
-      solution: '$(Build.SourcesDirectory)\dev\MRTCore\mrt\MrtCore.sln'
+      solution: '$(Build.SourcesDirectory)\WindowsAppRuntime.sln'
       configuration: '$(buildConfiguration)'
-      msbuildArguments: '/restore /binaryLogger:$(Build.SourcesDirectory)\dev\MRTCore\mrt\mrtcore.$(buildPlatform).$(buildConfiguration).binlog'
-"C:\__w\1\s\WindowsAppRuntime.sln"
+      msbuildArguments: '/restore /binaryLogger:$(Build.SourcesDirectory)\WindowsAppRuntime.$(buildPlatform).$(buildConfiguration).binlog'
       createLogFile: true
 
   # ToDo: WindowsAppSDK-BinaryAnalysis-steps.yml below ultimately invokes SDLNativeRules@2, which is out of support.
