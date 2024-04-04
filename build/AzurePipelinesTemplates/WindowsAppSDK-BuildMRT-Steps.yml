@@ -6,9 +6,9 @@ parameters:
   type: boolean
   default: True
 # alam start
-#- name: "RunPrefast"
-#  type: boolean
-#  default: False
+- name: "RunPrefast"
+  type: boolean
+  default: False
 - name: runStaticAnalysis
   type: boolean
   default: True
@@ -28,8 +28,8 @@ steps:
     slnDirectory: $(Build.SourcesDirectory)\dev\MRTCore\mrt
 
 # alam start
-#- ${{ if parameters.RunPrefast }}:
-- ${{ if eq(parameters.runStaticAnalysis, 'True') }}:
+- ${{ if parameters.RunPrefast }}:
+#- ${{ if eq(parameters.runStaticAnalysis, 'True') }}:
 # alam end
   # PREFast scan is enabled in this pipeline run, so we pass PreFastSetup to BuildAll.ps1 to get it to do the commonn setup steps, but short of
   # building the target via MSBuild.exe
@@ -38,6 +38,9 @@ steps:
     inputs:
       filePath: 'BuildAll.ps1'
       arguments: -Platform "$(buildPlatform)" -Configuration "$(buildConfiguration)" -AzureBuildStep "PreFastSetup"
+# alam start
+    enabled: false
+# alam end
 
   # The PREFast task below only supports the VSBuild/MSbuild task, _not_ a direct call to MSBuild.exe.
   - task: MSBuild@1
@@ -48,21 +51,24 @@ steps:
       configuration: '$(buildConfiguration)'
       msbuildArguments: '/restore /binaryLogger:$(Build.SourcesDirectory)\dev\MRTCore\mrt\mrtcore.$(buildPlatform).$(buildConfiguration).binlog'
       createLogFile: true
+# alam start
+    enabled: false
+# alam end
 
   # ToDo: WindowsAppSDK-BinaryAnalysis-steps.yml below ultimately invokes SDLNativeRules@2, which is out of support.
   # So for the time being, we explicitly call SDLNativeRules@3, which is currently supported. Consider eliminating this
   # extra step when we run PREFast as part of WindowsAppSDK-BinaryAnalysis-steps.yml below.
   - task: SDLNativeRules@3
     displayName: 'Guardian: PreFast@3'
-    # alam start
-    condition: and(succeeded(), eq(variables['buildPlatform'], 'x64'), eq(variables['buildConfiguration'], 'Release'))
-    # alam end
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
     continueOnError: true
     inputs:
       userProvideBuildInfo: 'auto'
       toolVersion: Latest
+# alam start
+    enabled: false
+# alam end
 
 # alam start
 #- ${{ if parameters.RunPrefast }}:
@@ -74,6 +80,22 @@ steps:
     inputs:
       filePath: 'BuildAll.ps1'
       arguments: -Platform "$(buildPlatform)" -Configuration "$(buildConfiguration)" -AzureBuildStep "BuildMRT"
+
+  # alam start
+  - ${{ if eq(parameters.runStaticAnalysis, 'True') }}:
+    - task: SDLNativeRules@3
+      displayName: 'Guardian: PreFast@3'
+      condition: and(succeeded(), eq(variables['buildPlatform'], 'x64'), eq(variables['buildConfiguration'], 'Release'))
+      inputs:
+        #userProvideBuildInfo: 'auto'
+        #toolVersion: Latest
+        setupCommandlines: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsMSBuildCmd.bat"'
+        msBuildArchitecture: amd64
+        msBuildCommandline: 'msbuild.exe /nologo /nr:false /p:configuration=Release /p:platform=x64 $(Build.SourcesDirectory)\dev\MRTCore\mrt\MrtCore.sln'
+      env:
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+      continueOnError: true
+# alam end
 
 # component detection must happen *within* the build task
 - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0

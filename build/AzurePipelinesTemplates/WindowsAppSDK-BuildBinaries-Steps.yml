@@ -69,11 +69,12 @@ steps:
     slnDirectory: $(Build.SourcesDirectory)
 
 # alam start
-#- task: PowerShell@2
-#  name: BuildBinaries
-#  inputs:
-#    filePath: 'BuildAll.ps1'
-#    arguments: -Platform "$(buildPlatform)" -Configuration "$(buildConfiguration)" -AzureBuildStep "BuildBinaries"
+- task: PowerShell@2
+  name: BuildBinaries
+  inputs:
+    filePath: 'BuildAll.ps1'
+    arguments: -Platform "$(buildPlatform)" -Configuration "$(buildConfiguration)" -AzureBuildStep "BuildBinaries"
+
 - ${{ if eq(parameters.runStaticAnalysis, 'True') }}:
   # PREFast scan is enabled in this pipeline run, so we pass PreFastSetup to BuildAll.ps1 to get it to do the commonn setup steps, but short of
   # building the target via MSBuild.exe
@@ -82,6 +83,7 @@ steps:
     inputs:
       filePath: 'BuildAll.ps1'
       arguments: -Platform "$(buildPlatform)" -Configuration "$(buildConfiguration)" -AzureBuildStep "PreFastSetup"
+    enabled: false
 
   # The PREFast task below only supports the VSBuild/MSbuild task, _not_ a direct call to MSBuild.exe.
   - task: MSBuild@1
@@ -92,18 +94,23 @@ steps:
       configuration: '$(buildConfiguration)'
       msbuildArguments: '/restore /binaryLogger:$(Build.SourcesDirectory)\WindowsAppRuntime.$(buildPlatform).$(buildConfiguration).binlog'
       createLogFile: true
+    enabled: false
 
   # ToDo: WindowsAppSDK-BinaryAnalysis-steps.yml below ultimately invokes SDLNativeRules@2, which is out of support.
   # So for the time being, we explicitly call SDLNativeRules@3, which is currently supported. Consider eliminating this
   # extra step when we run PREFast as part of WindowsAppSDK-BinaryAnalysis-steps.yml below.
   - task: SDLNativeRules@3
     displayName: 'Guardian: PreFast@3'
+    condition: and(succeeded(), eq(variables['buildConfiguration'], 'Release'), eq(variables['buildPlatform'], 'x64'))
+    inputs:
+      #userProvideBuildInfo: 'auto'
+      #toolVersion: Latest
+      setupCommandlines: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsMSBuildCmd.bat"'
+      msBuildArchitecture: amd64
+      msBuildCommandline: 'msbuild.exe /restore /nologo /nr:false /p:configuration=Release /p:platform=x64 $(Build.SourcesDirectory)\WindowsAppRuntime.sln'
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
     continueOnError: true
-    inputs:
-      userProvideBuildInfo: 'auto'
-      toolVersion: Latest
 
 - ${{ else }}:
   - task: PowerShell@2
@@ -111,6 +118,7 @@ steps:
     inputs:
       filePath: 'BuildAll.ps1'
       arguments: -Platform "$(buildPlatform)" -Configuration "$(buildConfiguration)" -AzureBuildStep "BuildBinaries"
+    enabled: false
 # alam end
 
 - ${{ if eq(parameters.SignOutput, 'true') }}:

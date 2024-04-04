@@ -42,7 +42,8 @@ steps:
     inputs:
       setupCommandlines: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsMSBuildCmd.bat"'
       # msBuildArchitecture: amd64
-      msBuildCommandline: 'msbuild.exe /nologo /nr:false $(Build.SourcesDirectory)\dev\Bootstrap\CS\Microsoft.WindowsAppRuntime.Bootstrap.Net\Microsoft.WindowsAppRuntime.Bootstrap.Net.csproj'
+      # msBuildCommandline: 'msbuild.exe /nologo /nr:false $(Build.SourcesDirectory)\dev\Bootstrap\CS\Microsoft.WindowsAppRuntime.Bootstrap.Net\Microsoft.WindowsAppRuntime.Bootstrap.Net.csproj'
+      msBuildCommandline: 'msbuild.exe /restore /nologo /nr:false $(Build.SourcesDirectory)\dev\Bootstrap\CS\Microsoft.WindowsAppRuntime.Bootstrap.Net\Microsoft.WindowsAppRuntime.Bootstrap.Net.csproj'
     continueOnError: true
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
